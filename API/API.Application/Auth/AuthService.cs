@@ -23,7 +23,7 @@ public sealed class AuthService
             Phone: phone,
             Username: normalizedUsername,
             DisplayName: displayName,
-            Avatar: null,
+            Avatar: "https://testingbot.com/free-online-tools/random-avatar/128",
             Bio: null,
             Settings: new UserSettings(Notifications: true, Theme: "dark"),
             LastSeen: DateTimeOffset.UtcNow

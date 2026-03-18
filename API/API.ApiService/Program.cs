@@ -2,6 +2,7 @@ using API.ApiService.Common.Extensions;
 using API.ApiService.Features.Auth;
 using API.ApiService.Features.Users;
 using API.ApiService.Features.Weather;
+using API.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ builder.Services.AddAuthFeature();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+await app.Services.EnsureUsersStorageInitializedAsync(builder.Configuration);
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
