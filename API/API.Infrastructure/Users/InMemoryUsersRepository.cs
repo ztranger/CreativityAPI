@@ -36,9 +36,12 @@ public sealed class InMemoryUsersRepository : IUsersRepository
     public User? GetByPhone(string phone) =>
         _users.FirstOrDefault(u => string.Equals(u.Phone, phone, StringComparison.Ordinal));
 
-    public int GetNextId() => _users.Count == 0 ? 1 : _users.Max(u => u.Id) + 1;
-
-    public void Add(User user) => _users.Add(user);
+    public User Add(User user)
+    {
+        var userToSave = user.Id > 0 ? user : user with { Id = GetNextId() };
+        _users.Add(userToSave);
+        return userToSave;
+    }
 
     public void Update(User user)
     {
@@ -63,4 +66,6 @@ public sealed class InMemoryUsersRepository : IUsersRepository
             .Take(limit)
             .ToList();
     }
+
+    private int GetNextId() => _users.Count == 0 ? 1 : _users.Max(u => u.Id) + 1;
 }

@@ -16,12 +16,12 @@ public sealed class AuthService
 
     public (User User, string Token) Register(string phone, string displayName, string? username)
     {
-        var newUserId = _usersRepository.GetNextId();
+        var normalizedUsername = string.IsNullOrWhiteSpace(username) ? null : username.Trim();
 
-        var user = new User(
-            Id: newUserId,
+        var userToCreate = new User(
+            Id: 0,
             Phone: phone,
-            Username: string.IsNullOrWhiteSpace(username) ? $"user{newUserId}" : username,
+            Username: normalizedUsername,
             DisplayName: displayName,
             Avatar: null,
             Bio: null,
@@ -29,7 +29,16 @@ public sealed class AuthService
             LastSeen: DateTimeOffset.UtcNow
         );
 
-        _usersRepository.Add(user);
+        var savedUser = _usersRepository.Add(userToCreate);
+        var user = string.IsNullOrWhiteSpace(savedUser.Username)
+            ? savedUser with { Username = $"user{savedUser.Id}" }
+            : savedUser;
+
+        if (!string.Equals(user.Username, savedUser.Username, StringComparison.Ordinal))
+        {
+            _usersRepository.Update(user);
+        }
+
         var token = _userTokenService.GenerateToken(user);
         return (user, token);
     }

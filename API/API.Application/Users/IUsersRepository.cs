@@ -10,9 +10,7 @@ public interface IUsersRepository
 
     User? GetByPhone(string phone);
 
-    int GetNextId();
-
-    void Add(User user);
+    User Add(User user);
 
     void Update(User user);
 

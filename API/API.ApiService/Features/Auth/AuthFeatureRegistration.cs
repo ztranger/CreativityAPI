@@ -6,7 +6,7 @@ public static class AuthFeatureRegistration
 {
     public static IServiceCollection AddAuthFeature(this IServiceCollection services)
     {
-        services.AddSingleton<AuthService>();
+        services.AddScoped<AuthService>();
         return services;
     }
 }

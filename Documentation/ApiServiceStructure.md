@@ -2,14 +2,14 @@
 
 ## Purpose
 
-This document describes the current code organization after refactoring `API.ApiService` from a single-file implementation into feature slices and layered projects.
+This document describes the current code organization of `API.ApiService` and related layers after introducing a DB-backed users repository with EF Core + PostgreSQL, while preserving an in-memory provider.
 
 ## Solution Projects
 
 - `API.ApiService` - HTTP layer (Minimal API), endpoint mapping, middleware, and DI composition.
 - `API.Domain` - domain models and value objects without ASP.NET dependencies.
 - `API.Application` - application services and contracts (interfaces for repositories and token generation).
-- `API.Infrastructure` - technical implementations (JWT, in-memory repository, future DB adapters).
+- `API.Infrastructure` - technical implementations (JWT, repository implementations, EF Core persistence, migrations).
 - Existing projects `API.Web`, `API.ServiceDefaults`, `API.AppHost`, `API.Tests` remain in place.
 
 ## High-Level Dependency Rules
@@ -57,6 +57,7 @@ API.ApiService/
   - Contains request/response DTOs specific to HTTP API.
 - `Features/*/FeatureRegistration`
   - Registers feature dependencies into DI.
+  - `UsersFeatureRegistration` selects repository provider (`InMemory` or `Postgres`) from config.
 - `Common/Extensions/ServiceCollectionExtensions.cs`
   - Centralized auth registration (`AddJwtAuthentication`).
 
@@ -101,14 +102,28 @@ API.Infrastructure/
   Auth/
     JwtOptions.cs
     JwtTokenService.cs
+  Persistence/
+    ApiDbContext.cs
+    ApiDbContextDesignTimeFactory.cs
+    Configurations/
+      UserEntityConfiguration.cs
+    Entities/
+      UserEntity.cs
+    Migrations/
+      <generated migration files>
   Users/
     InMemoryUsersRepository.cs
+    PostgresUsersRepository.cs
 ```
 
 - Implements application interfaces:
   - `JwtTokenService : IUserTokenService`
   - `InMemoryUsersRepository : IUsersRepository`
-- Current data storage remains in-memory for compatibility and fast replacement later.
+  - `PostgresUsersRepository : IUsersRepository`
+- Contains EF Core persistence:
+  - `ApiDbContext` and entity configuration for `users`
+  - design-time factory for `dotnet ef`
+  - migrations for DB schema evolution
 
 ## Request Flow
 
@@ -116,10 +131,22 @@ API.Infrastructure/
 flowchart LR
 Client --> ApiServiceEndpoints
 ApiServiceEndpoints --> ApplicationServices
+ApplicationServices --> IUsersRepository
 ApplicationServices --> DomainModels
-ApplicationServices --> InfrastructureInterfaces
-InfrastructureInterfaces --> InfrastructureImplementations
+IUsersRepository -->|"Provider=InMemory"| InMemoryRepo
+IUsersRepository -->|"Provider=Postgres"| PostgresRepo
+PostgresRepo --> ApiDbContext
+ApiDbContext --> PostgreSQL
 ```
+
+## Runtime Configuration
+
+- Repository provider is selected in API config:
+  - `UsersRepository:Provider` = `InMemory` or `Postgres`
+- PostgreSQL connection is read from:
+  - `ConnectionStrings:Main`
+- In local Aspire runs (`API.AppHost`), these values are only forwarded as environment variables to `API.ApiService`.
+- Decision logic stays in `API.ApiService`, so behavior is consistent both with and without Aspire.
 
 ## How to Extend the API
 
@@ -132,8 +159,8 @@ For a new feature (example: `Chats`):
 5. Implement technical details in `API.Infrastructure`.
 6. Register feature services in `FeatureRegistration` and map endpoints in `Program.cs`.
 
-## Current Constraints and Next Steps
+## Current Constraints and Notes
 
-- Users repository is still in-memory (`InMemoryUsersRepository`).
-- Next infrastructure step is replacing it with persistent storage (DB-backed repository) behind `IUsersRepository`.
-- API contracts are preserved from the previous single-file implementation.
+- Postgres mode requires a valid `ConnectionStrings:Main`; startup succeeds, but user operations fail if DB auth is invalid.
+- In-memory mode remains available for local smoke tests and fallback scenarios.
+- API contracts remain stable while persistence is switchable behind `IUsersRepository`.

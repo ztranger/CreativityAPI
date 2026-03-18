@@ -12,7 +12,7 @@ builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
-builder.Services.AddUsersFeature();
+builder.Services.AddUsersFeature(builder.Configuration);
 builder.Services.AddAuthFeature();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
