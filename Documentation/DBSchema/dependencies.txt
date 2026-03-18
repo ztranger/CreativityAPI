@@ -1,0 +1,46 @@
+DEPENDENCIES (MVP Messaging)
+
+1) users(id) -> chats(created_by)
+   - cardinality: users 1 --- * chats
+   - on delete: RESTRICT
+   - on update: NO ACTION
+
+2) chats(id) -> chat_members(chat_id)
+   - cardinality: chats 1 --- * chat_members
+   - on delete: CASCADE
+   - on update: NO ACTION
+
+3) users(id) -> chat_members(user_id)
+   - cardinality: users 1 --- * chat_members
+   - on delete: CASCADE
+   - on update: NO ACTION
+
+4) chats(id) -> messages(chat_id)
+   - cardinality: chats 1 --- * messages
+   - on delete: CASCADE
+   - on update: NO ACTION
+
+5) users(id) -> messages(sender_user_id)
+   - cardinality: users 1 --- * messages
+   - on delete: RESTRICT
+   - on update: NO ACTION
+
+6) messages(id) -> messages(reply_to_message_id)
+   - cardinality: messages 1 --- * messages (self-reference)
+   - on delete: SET NULL
+   - on update: NO ACTION
+
+7) messages(id) -> message_content(message_id)
+   - cardinality: messages 1 --- 1 message_content
+   - on delete: CASCADE
+   - on update: NO ACTION
+
+8) messages(id) -> message_reads(message_id)
+   - cardinality: messages 1 --- * message_reads
+   - on delete: CASCADE
+   - on update: NO ACTION
+
+9) users(id) -> message_reads(user_id)
+   - cardinality: users 1 --- * message_reads
+   - on delete: CASCADE
+   - on update: NO ACTION

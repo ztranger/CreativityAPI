@@ -1,17 +1,18 @@
-CREATE TYPE participant_role AS ENUM ('member', 'admin', 'owner');
-CREATE TYPE membership_status AS ENUM ('active', 'invited', 'left', 'kicked');
+CREATE TYPE chat_member_role AS ENUM ('member', 'admin', 'owner'); -- Роли в чате
 
-CREATE TABLE chat_participants (
-    chat_id BIGINT REFERENCES chats(id) ON DELETE CASCADE,
-    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-    role participant_role DEFAULT 'member',
-    status membership_status DEFAULT 'active',
-    joined_at TIMESTAMPTZ DEFAULT NOW(),
-    last_read_message_id BIGINT, -- До какого сообщения прочитано пользователем в этом чате
-    muted_until TIMESTAMPTZ NULL, -- До какого времени отключены уведомления
-    PRIMARY KEY (chat_id, user_id) -- Составной первичный ключ
+CREATE TABLE chat_members (
+    chat_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role chat_member_role NOT NULL DEFAULT 'member', -- Роль участника в чате
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), -- Когда пользователь вступил в чат
+    left_at TIMESTAMPTZ NULL, -- Когда пользователь покинул чат
+    mute_until TIMESTAMPTZ NULL, -- До какого времени отключены уведомления
+    last_read_message_id BIGINT NULL, -- Курсор прочтения в рамках чата
+    is_pinned BOOLEAN NOT NULL DEFAULT FALSE, -- Закреплен ли чат у пользователя
+    PRIMARY KEY (chat_id, user_id) -- Один пользователь может иметь одну активную запись в чате
 );
 
 -- Индексы для быстрого получения чатов пользователя и участников чата
-CREATE INDEX idx_participants_user_id ON chat_participants(user_id) WHERE status = 'active';
-CREATE INDEX idx_participants_chat_id ON chat_participants(chat_id) WHERE status = 'active';
+CREATE INDEX idx_chat_members_user_id_chat_id ON chat_members(user_id, chat_id);
+CREATE INDEX idx_chat_members_chat_id_user_id ON chat_members(chat_id, user_id);
+CREATE INDEX idx_chat_members_active_user_id ON chat_members(user_id) WHERE left_at IS NULL;

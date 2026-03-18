@@ -1,6 +1,8 @@
-users 1 --- * chat_participants * --- 1 chats
-  |                    |
-  |                    |
-  *                    *
- messages           messages
-(автор)            (принадлежат чату)
+users 1 --- * chat_members * --- 1 chats
+  |                                   |
+  |                                   |
+  *                                   *
+messages (sender_user_id)         messages (chat_id)
+
+messages 1 --- 1 message_content
+messages 1 --- * message_reads * --- 1 users

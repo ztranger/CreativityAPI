@@ -11,6 +11,11 @@ public sealed class ApiDbContext : DbContext
     }
 
     public DbSet<UserEntity> Users => Set<UserEntity>();
+    public DbSet<ChatEntity> Chats => Set<ChatEntity>();
+    public DbSet<ChatMemberEntity> ChatMembers => Set<ChatMemberEntity>();
+    public DbSet<MessageEntity> Messages => Set<MessageEntity>();
+    public DbSet<MessageContentEntity> MessageContents => Set<MessageContentEntity>();
+    public DbSet<MessageReadEntity> MessageReads => Set<MessageReadEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
