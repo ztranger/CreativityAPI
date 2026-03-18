@@ -1,0 +1,17 @@
+﻿API/API.ApiService/obj
+API/API.AppHost/bin
+API/API.Domain/bin
+API/API.Infrastructure/obj
+API/API.ServiceDefaults/bin
+API/API.Tests/bin
+API/API.Web/bin
+API/API.Web/obj
+API/API.Tests/obj
+API/API.ServiceDefaults/obj
+API/API.Infrastructure/bin
+API/API.ApiService/bin
+API/API.AppHost/obj
+API/API.Application/bin
+API/API.Domain/obj
+API/API.Application/obj
+.vs
