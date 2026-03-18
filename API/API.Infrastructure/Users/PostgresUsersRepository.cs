@@ -1,8 +1,10 @@
 using API.Application.Users;
+using API.Application.Common.Exceptions;
 using API.Domain.Users;
 using API.Infrastructure.Persistence;
 using API.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace API.Infrastructure.Users;
 
@@ -49,7 +51,14 @@ public sealed class PostgresUsersRepository : IUsersRepository
     {
         var entity = ToEntity(user, includeId: user.Id > 0);
         _dbContext.Users.Add(entity);
-        _dbContext.SaveChanges();
+        try
+        {
+            _dbContext.SaveChanges();
+        }
+        catch (DbUpdateException ex) when (TryMapUniqueConstraint(ex, out var mapped))
+        {
+            throw mapped;
+        }
         return ToDomain(entity);
     }
 
@@ -69,7 +78,14 @@ public sealed class PostgresUsersRepository : IUsersRepository
         existing.Settings = user.Settings;
         existing.LastSeenAt = user.LastSeen;
 
-        _dbContext.SaveChanges();
+        try
+        {
+            _dbContext.SaveChanges();
+        }
+        catch (DbUpdateException ex) when (TryMapUniqueConstraint(ex, out var mapped))
+        {
+            throw mapped;
+        }
     }
 
     public IReadOnlyCollection<User> Search(string query, int limit)
@@ -122,5 +138,38 @@ public sealed class PostgresUsersRepository : IUsersRepository
         }
 
         return entity;
+    }
+
+    private static bool TryMapUniqueConstraint(
+        DbUpdateException exception,
+        out UserUniqueConstraintViolationException mapped)
+    {
+        mapped = null!;
+
+        if (exception.InnerException is not PostgresException postgresException)
+        {
+            return false;
+        }
+
+        // 23505 = unique_violation
+        if (!string.Equals(postgresException.SqlState, PostgresErrorCodes.UniqueViolation, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var field = postgresException.ConstraintName switch
+        {
+            "IX_users_phone" => "phone",
+            "IX_users_username" => "username",
+            _ => null
+        };
+
+        if (field is null)
+        {
+            return false;
+        }
+
+        mapped = new UserUniqueConstraintViolationException(field);
+        return true;
     }
 }

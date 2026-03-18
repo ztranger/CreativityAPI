@@ -2,7 +2,9 @@ using API.ApiService.Common.Extensions;
 using API.ApiService.Features.Auth;
 using API.ApiService.Features.Users;
 using API.ApiService.Features.Weather;
+using API.Application.Common.Exceptions;
 using API.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +25,27 @@ var app = builder.Build();
 await app.Services.EnsureUsersStorageInitializedAsync(builder.Configuration);
 
 // Configure the HTTP request pipeline.
-app.UseExceptionHandler();
+app.UseExceptionHandler(exceptionApp =>
+{
+    exceptionApp.Run(async context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+
+        if (exception is UserUniqueConstraintViolationException uniqueViolation)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                code = uniqueViolation.Code,
+                message = uniqueViolation.Message,
+                field = uniqueViolation.Field
+            });
+            return;
+        }
+
+        await Results.Problem(statusCode: StatusCodes.Status500InternalServerError).ExecuteAsync(context);
+    });
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
