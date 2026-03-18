@@ -1,0 +1,12 @@
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\bin\Debug\net9.0\API.ServiceDefaults.deps.json
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\bin\Debug\net9.0\API.ServiceDefaults.dll
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\bin\Debug\net9.0\API.ServiceDefaults.pdb
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\API.ServiceDefaults.csproj.AssemblyReference.cache
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\API.ServiceDefaults.GeneratedMSBuildEditorConfig.editorconfig
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\API.ServiceDefaults.AssemblyInfoInputs.cache
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\API.ServiceDefaults.AssemblyInfo.cs
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\API.ServiceDefaults.csproj.CoreCompileInputs.cache
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\API.ServiceDefaults.dll
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\refint\API.ServiceDefaults.dll
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\API.ServiceDefaults.pdb
+D:\Projects\CreativityAPI\API\API.ServiceDefaults\obj\Debug\net9.0\ref\API.ServiceDefaults.dll

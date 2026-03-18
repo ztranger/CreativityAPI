@@ -1,0 +1,6 @@
+users 1 --- * chat_participants * --- 1 chats
+  |                    |
+  |                    |
+  *                    *
+ messages           messages
+(автор)            (принадлежат чату)
