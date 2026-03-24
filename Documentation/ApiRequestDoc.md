@@ -344,6 +344,23 @@ Unblock user.
 
 ## 2. Chats
 
+### MVP Implemented (Current)
+
+For the current MVP build, the following chat endpoints are implemented and available:
+
+- `POST /chats`
+- `GET /chats`
+- `GET /chats/:id`
+- `PATCH /chats/:id`
+- `POST /chats/:id/participants`
+- `DELETE /chats/:id/participants/:userId`
+
+Notes:
+
+- All listed endpoints require JWT authentication.
+- `chatType` and participant `role` are numeric (`1..3`) and mapped to DB check constraints.
+- Access is limited to active chat members.
+
 ### Chat Management
 
 #### `GET /chats`
@@ -584,6 +601,19 @@ Delete invite link.
 ---
 
 ## 3. Messages
+
+### MVP Implemented (Current)
+
+For the current MVP build, the following message endpoints are implemented and available:
+
+- `POST /chats/:chatId/messages` (text only)
+- `GET /chats/:chatId/messages`
+
+Notes:
+
+- All listed endpoints require JWT authentication.
+- Sending message is allowed only for active chat members.
+- Current MVP supports text messages only (`message_type = 1`).
 
 ### Core Operations
 

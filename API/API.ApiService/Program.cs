@@ -1,5 +1,6 @@
 using API.ApiService.Common.Extensions;
 using API.ApiService.Features.Auth;
+using API.ApiService.Features.Chats;
 using API.ApiService.Features.Users;
 using API.ApiService.Features.Weather;
 using API.Application.Common.Exceptions;
@@ -16,6 +17,7 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddUsersFeature(builder.Configuration);
+builder.Services.AddChatsFeature(builder.Configuration);
 builder.Services.AddAuthFeature();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -58,6 +60,7 @@ if (app.Environment.IsDevelopment())
 app.MapWeatherEndpoints();
 app.MapAuthEndpoints();
 app.MapUsersEndpoints();
+app.MapChatsEndpoints();
 
 app.MapDefaultEndpoints();
 
