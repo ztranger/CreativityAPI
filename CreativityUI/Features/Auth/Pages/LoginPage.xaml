@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:CreativityUI.Features.Auth.ViewModels"
+             x:Class="CreativityUI.Features.Auth.Pages.LoginPage"
+             x:DataType="viewModels:LoginViewModel"
+             Title="Login">
+
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <VerticalStackLayout Spacing="12" VerticalOptions="Center">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" HorizontalOptions="Center">
+                <BoxView Grid.Column="0"
+                         WidthRequest="14"
+                         HeightRequest="14"
+                         Color="{Binding TokenIndicatorColor}"
+                         CornerRadius="7"
+                         VerticalOptions="Center" />
+                <Label Grid.Column="1" Text="Sign In" FontSize="28" HorizontalOptions="Center" />
+            </Grid>
+
+            <Label Text="{Binding TokenStatusText}"
+                   HorizontalOptions="Center"
+                   TextColor="Gray" />
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <Label Grid.Column="0"
+                       Text="{Binding TokenDebugText}"
+                       LineBreakMode="CharacterWrap"
+                       FontSize="12"
+                       TextColor="Gray"
+                       VerticalTextAlignment="Center" />
+                <Button Grid.Column="1"
+                        Text="Copy"
+                        FontSize="12"
+                        Padding="10,4"
+                        Command="{Binding CopyTokenCommand}"
+                        VerticalOptions="Start" />
+                <Button Grid.Column="2"
+                        Text="Clear token"
+                        FontSize="12"
+                        Padding="10,4"
+                        Command="{Binding ClearTokenCommand}"
+                        VerticalOptions="Start" />
+            </Grid>
+
+            <Entry Placeholder="Phone" Keyboard="Telephone" Text="{Binding Phone}" />
+            <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
+
+            <Button Text="Login" Command="{Binding LoginCommand}" />
+
+            <Label Text="{Binding StatusMessage}"
+                   LineBreakMode="WordWrap"
+                   TextColor="Gray" />
+        </VerticalStackLayout>
+
+        <Label Grid.Row="1"
+               Text="Register"
+               HorizontalOptions="Center"
+               Margin="0,20,0,0"
+               TextDecorations="Underline">
+            <Label.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding OpenRegisterCommand}" />
+            </Label.GestureRecognizers>
+        </Label>
+    </Grid>
+</ContentPage>

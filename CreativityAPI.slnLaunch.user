@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "API\\API.AppHost\\API.AppHost.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "CreativityUI\\CreativityUI.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
