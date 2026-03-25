@@ -30,6 +30,23 @@ public sealed class CreativityApiClient
         return await response.Content.ReadFromJsonAsync<ChatDetailsResponse>(cancellationToken: cancellationToken);
     }
 
+    public async Task<MessagesListResponse?> GetChatMessagesAsync(long chatId, CancellationToken cancellationToken = default)
+    {
+        await AttachBearerTokenAsync();
+        return await _httpClient.GetFromJsonAsync<MessagesListResponse>($"chats/{chatId}/messages", cancellationToken);
+    }
+
+    public async Task<MessageResponse?> SendMessageAsync(
+        long chatId,
+        SendMessageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await AttachBearerTokenAsync();
+        using var response = await _httpClient.PostAsJsonAsync($"chats/{chatId}/messages", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MessageResponse>(cancellationToken: cancellationToken);
+    }
+
     private async Task AttachBearerTokenAsync()
     {
         var token = await _authTokenStore.GetTokenAsync();

@@ -6,6 +6,7 @@ namespace CreativityUI.Features.Auth.ViewModels;
 public sealed class RegisterViewModel : ViewModelBase
 {
     private readonly IAuthService _authService;
+    private readonly IAuthNavigationService _authNavigationService;
     private readonly IAuthTokenStore _authTokenStore;
     private string _phone = string.Empty;
     private string _displayName = string.Empty;
@@ -14,9 +15,13 @@ public sealed class RegisterViewModel : ViewModelBase
     private string _resultMessage = string.Empty;
     private bool _isBusy;
 
-    public RegisterViewModel(IAuthService authService, IAuthTokenStore authTokenStore)
+    public RegisterViewModel(
+        IAuthService authService,
+        IAuthNavigationService authNavigationService,
+        IAuthTokenStore authTokenStore)
     {
         _authService = authService;
+        _authNavigationService = authNavigationService;
         _authTokenStore = authTokenStore;
         SubmitCommand = new Command(async () => await SubmitAsync(), () => !IsBusy);
         _ = InitializeAsync();
@@ -93,6 +98,7 @@ public sealed class RegisterViewModel : ViewModelBase
             };
             var response = await _authService.RegisterAsync(request);
             await _authTokenStore.SavePhoneAsync(request.Phone);
+            await _authNavigationService.NavigateToMessengerAsync();
             ResultMessage = $"Registered: id={response.User.Id}, name={response.User.DisplayName}, token saved.";
         }
         catch (Exception ex)

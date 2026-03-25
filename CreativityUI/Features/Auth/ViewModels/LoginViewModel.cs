@@ -97,6 +97,7 @@ public sealed class LoginViewModel : ViewModelBase
             var response = await _authService.LoginAsync(request);
             UpdateTokenPresentation(response.Token);
             StatusMessage = $"Logged in: id={response.User.Id}, name={response.User.DisplayName}.";
+            await _authNavigationService.NavigateToMessengerAsync();   
         }
         catch (Exception ex)
         {

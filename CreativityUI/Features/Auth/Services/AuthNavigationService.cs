@@ -1,4 +1,5 @@
 using CreativityUI.Features.Auth.Pages;
+using CreativityUI.Features.Messenger.Pages;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CreativityUI.Features.Auth.Services;
@@ -27,5 +28,17 @@ public sealed class AuthNavigationService : IAuthNavigationService
         {
             await rootPage.Navigation.PushAsync(registerPage);
         }
+    }
+
+    public Task NavigateToMessengerAsync()
+    {
+        var messengerPage = _serviceProvider.GetRequiredService<MessengerPage>();
+        var window = Application.Current?.Windows.FirstOrDefault();
+        if (window is not null)
+        {
+            window.Page = new NavigationPage(messengerPage);
+        }
+
+        return Task.CompletedTask;
     }
 }

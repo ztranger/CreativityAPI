@@ -3,6 +3,9 @@ using CreativityUI.Services.Api;
 using CreativityUI.Features.Auth.Pages;
 using CreativityUI.Features.Auth.Services;
 using CreativityUI.Features.Auth.ViewModels;
+using CreativityUI.Features.Messenger.Pages;
+using CreativityUI.Features.Messenger.Services;
+using CreativityUI.Features.Messenger.ViewModels;
 
 namespace CreativityUI;
 
@@ -33,10 +36,13 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IAuthService, AuthService>();
 		builder.Services.AddSingleton<ITokenValidationService, JwtTokenValidationService>();
 		builder.Services.AddSingleton<IAuthNavigationService, AuthNavigationService>();
+		builder.Services.AddSingleton<ILastChatStore, PreferencesLastChatStore>();
 		builder.Services.AddTransient<LoginViewModel>();
 		builder.Services.AddTransient<RegisterViewModel>();
+		builder.Services.AddTransient<MessengerViewModel>();
 		builder.Services.AddTransient<LoginPage>();
 		builder.Services.AddTransient<RegisterPage>();
+		builder.Services.AddTransient<MessengerPage>();
 
 		return builder.Build();
 	}
