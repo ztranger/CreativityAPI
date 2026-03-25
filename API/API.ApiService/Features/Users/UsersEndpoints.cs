@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using AppUsersService = API.Application.Users.UsersService;
 using API.Contracts.Users;
 
@@ -9,9 +11,20 @@ public static class UsersEndpoints
     {
         var users = app.MapGroup("/users");
 
-        users.MapGet("/me", (AppUsersService usersService) =>
+        users.MapGet("/me", (ClaimsPrincipal principal, AppUsersService usersService) =>
         {
-            var user = usersService.GetCurrentUser();
+            var currentUserId = GetCurrentUserId(principal);
+            if (currentUserId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var user = usersService.GetOtherUser(currentUserId.Value);
+            if (user is null)
+            {
+                return Results.NotFound();
+            }
+
             var response = new CurrentUserResponse(
                 Id: user.Id,
                 Phone: user.Phone,
@@ -25,9 +38,26 @@ public static class UsersEndpoints
             return Results.Ok(response);
         }).RequireAuthorization();
 
-        users.MapPatch("/me", (UpdateProfileRequest request, AppUsersService usersService) =>
+        users.MapPatch("/me", (UpdateProfileRequest request, ClaimsPrincipal principal, AppUsersService usersService) =>
         {
-            usersService.UpdateCurrentUser(request.DisplayName, request.Username, request.Bio, request.Avatar);
+            var currentUserId = GetCurrentUserId(principal);
+            if (currentUserId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var updated = usersService.UpdateCurrentUser(
+                currentUserId.Value,
+                request.DisplayName,
+                request.Username,
+                request.Bio,
+                request.Avatar);
+
+            if (!updated)
+            {
+                return Results.NotFound();
+            }
+
             return Results.NoContent();
         }).RequireAuthorization();
 
@@ -82,5 +112,15 @@ public static class UsersEndpoints
         }).RequireAuthorization();
 
         return app;
+    }
+
+    private static int? GetCurrentUserId(ClaimsPrincipal principal)
+    {
+        var rawUserId = principal.FindFirstValue(JwtRegisteredClaimNames.Sub)
+            ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        return int.TryParse(rawUserId, out var userId)
+            ? userId
+            : null;
     }
 }

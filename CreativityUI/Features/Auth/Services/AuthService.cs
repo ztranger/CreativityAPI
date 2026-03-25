@@ -20,4 +20,12 @@ public sealed class AuthService : IAuthService
         await _authTokenStore.SavePhoneAsync(request.Phone);
         return response;
     }
+
+    public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await _authApiClient.LoginAsync(request, cancellationToken);
+        await _authTokenStore.SaveTokenAsync(response.Token);
+        await _authTokenStore.SavePhoneAsync(request.Phone);
+        return response;
+    }
 }

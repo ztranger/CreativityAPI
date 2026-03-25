@@ -77,6 +77,7 @@ public sealed class PostgresUsersRepository : IUsersRepository
         existing.Bio = user.Bio;
         existing.Settings = user.Settings;
         existing.LastSeenAt = user.LastSeen;
+        existing.PasswordHash = user.PasswordHash;
 
         try
         {
@@ -117,7 +118,8 @@ public sealed class PostgresUsersRepository : IUsersRepository
             Avatar: entity.AvatarUrl,
             Bio: entity.Bio,
             Settings: entity.Settings,
-            LastSeen: entity.LastSeenAt);
+            LastSeen: entity.LastSeenAt,
+            PasswordHash: entity.PasswordHash);
 
     private static UserEntity ToEntity(User user, bool includeId)
     {
@@ -129,7 +131,8 @@ public sealed class PostgresUsersRepository : IUsersRepository
             AvatarUrl = user.Avatar,
             Bio = user.Bio,
             Settings = user.Settings,
-            LastSeenAt = user.LastSeen
+            LastSeenAt = user.LastSeen,
+            PasswordHash = user.PasswordHash
         };
 
         if (includeId)

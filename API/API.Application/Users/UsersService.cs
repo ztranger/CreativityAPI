@@ -13,9 +13,14 @@ public sealed class UsersService
 
     public User GetCurrentUser() => _usersRepository.GetCurrentUser();
 
-    public void UpdateCurrentUser(string? displayName, string? username, string? bio, string? avatar)
+    public bool UpdateCurrentUser(int userId, string? displayName, string? username, string? bio, string? avatar)
     {
-        var user = _usersRepository.GetCurrentUser();
+        var user = _usersRepository.GetById(userId);
+        if (user is null)
+        {
+            return false;
+        }
+
         var updatedUser = user with
         {
             DisplayName = displayName ?? user.DisplayName,
@@ -25,6 +30,7 @@ public sealed class UsersService
         };
 
         _usersRepository.Update(updatedUser);
+        return true;
     }
 
     public User? GetOtherUser(int id) => _usersRepository.GetById(id);

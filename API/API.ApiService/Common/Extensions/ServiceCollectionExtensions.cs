@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(jwtOptions);
         services.AddSingleton<IUserTokenService, JwtTokenService>();
+        services.AddSingleton<IPasswordHashService, Pbkdf2PasswordHashService>();
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

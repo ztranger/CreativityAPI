@@ -45,6 +45,17 @@ app.UseExceptionHandler(exceptionApp =>
             return;
         }
 
+        if (exception is InvalidCredentialsException invalidCredentials)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                code = invalidCredentials.Code,
+                message = invalidCredentials.Message
+            });
+            return;
+        }
+
         await Results.Problem(statusCode: StatusCodes.Status500InternalServerError).ExecuteAsync(context);
     });
 });

@@ -19,4 +19,6 @@ public sealed class UserEntity
     public UserSettings Settings { get; set; } = new(true, "dark");
 
     public DateTimeOffset? LastSeenAt { get; set; }
+
+    public string PasswordHash { get; set; } = string.Empty;
 }

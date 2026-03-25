@@ -1,4 +1,4 @@
-using AppAuthService = API.Application.Auth.AuthService;
+using API.Application.Auth;
 using API.Contracts.Auth;
 
 namespace API.ApiService.Features.Auth;
@@ -9,14 +9,21 @@ public static class AuthEndpoints
     {
         var auth = app.MapGroup("/auth");
 
-        auth.MapPost("/register", (RegisterRequest request, AppAuthService authService) =>
+        auth.MapPost("/register", (RegisterRequest request, IAuthService authService) =>
         {
-            var (user, token) = authService.Register(request.Phone, request.DisplayName, request.Username);
+            var (user, token) = authService.Register(request.Phone, request.DisplayName, request.Username, request.Password);
             var response = new AuthRegisterResponse(ToAuthUserResponse(user), token);
             return Results.Created($"/users/{response.User.Id}", response);
         });
 
-        auth.MapPost("/verify", (AuthVerifyRequest request, AppAuthService authService) =>
+        auth.MapPost("/login", (LoginRequest request, IAuthService authService) =>
+        {
+            var (user, token) = authService.Login(request.Phone, request.Password);
+            var response = new LoginResponse(ToAuthUserResponse(user), token);
+            return Results.Ok(response);
+        });
+
+        auth.MapPost("/verify", (AuthVerifyRequest request, IAuthService authService) =>
         {
             var (user, token) = authService.Verify(request.Phone);
             var settings = new AuthUserSettingsResponse(user.Settings.Notifications, user.Settings.Theme);
@@ -24,7 +31,7 @@ public static class AuthEndpoints
             return Results.Ok(response);
         });
 
-        auth.MapPost("/refresh", (AuthRefreshRequest request, AppAuthService authService) =>
+        auth.MapPost("/refresh", (AuthRefreshRequest request, IAuthService authService) =>
         {
             _ = request;
             var response = new AuthRefreshResponse(authService.RefreshAccessToken());

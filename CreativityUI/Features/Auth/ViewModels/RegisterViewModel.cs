@@ -10,6 +10,7 @@ public sealed class RegisterViewModel : ViewModelBase
     private string _phone = string.Empty;
     private string _displayName = string.Empty;
     private string _username = string.Empty;
+    private string _password = string.Empty;
     private string _resultMessage = string.Empty;
     private bool _isBusy;
 
@@ -39,6 +40,12 @@ public sealed class RegisterViewModel : ViewModelBase
         set => SetProperty(ref _username, value);
     }
 
+    public string Password
+    {
+        get => _password;
+        set => SetProperty(ref _password, value);
+    }
+
     public string ResultMessage
     {
         get => _resultMessage;
@@ -66,9 +73,9 @@ public sealed class RegisterViewModel : ViewModelBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(Phone) || string.IsNullOrWhiteSpace(DisplayName))
+        if (string.IsNullOrWhiteSpace(Phone) || string.IsNullOrWhiteSpace(DisplayName) || string.IsNullOrWhiteSpace(Password))
         {
-            ResultMessage = "Заполните Phone и DisplayName.";
+            ResultMessage = "Заполните Phone, DisplayName и Password.";
             return;
         }
 
@@ -77,7 +84,13 @@ public sealed class RegisterViewModel : ViewModelBase
 
         try
         {
-            var request = new RegisterRequest(Phone.Trim(), DisplayName.Trim(), string.IsNullOrWhiteSpace(Username) ? null : Username.Trim());
+            var request = new RegisterRequest
+            {
+                Phone = Phone.Trim(),
+                DisplayName = DisplayName.Trim(),
+                Username = string.IsNullOrWhiteSpace(Username) ? null : Username.Trim(),
+                Password = Password
+            };
             var response = await _authService.RegisterAsync(request);
             await _authTokenStore.SavePhoneAsync(request.Phone);
             ResultMessage = $"Registered: id={response.User.Id}, name={response.User.DisplayName}, token saved.";

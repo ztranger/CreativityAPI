@@ -13,6 +13,7 @@
             <Entry Placeholder="Phone" Keyboard="Telephone" Text="{Binding Phone}" />
             <Entry Placeholder="DisplayName" Text="{Binding DisplayName}" />
             <Entry Placeholder="Username (optional)" Text="{Binding Username}" />
+            <Entry Placeholder="Password" Text="{Binding Password}" IsPassword="True" />
 
             <Button Text="OK" Command="{Binding SubmitCommand}" />
 

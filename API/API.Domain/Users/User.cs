@@ -8,7 +8,8 @@ public record User(
     string? Avatar,
     string? Bio,
     UserSettings Settings,
-    DateTimeOffset? LastSeen
+    DateTimeOffset? LastSeen,
+    string PasswordHash
 );
 
 public record UserSettings(bool Notifications, string Theme);

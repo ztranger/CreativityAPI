@@ -15,7 +15,8 @@ public sealed class InMemoryUsersRepository : IUsersRepository
             Avatar: "https://cdn.example.com/avatars/123.jpg",
             Bio: "Hello there!",
             Settings: new UserSettings(Notifications: true, Theme: "dark"),
-            LastSeen: DateTimeOffset.Parse("2024-01-01T12:00:00Z")
+            LastSeen: DateTimeOffset.Parse("2024-01-01T12:00:00Z"),
+            PasswordHash: "PBKDF2$SHA256$100000$bGVnYWN5LXVzZXJzLXNhbHQ=$FflXmUN1iBnxwbQCPl9NCFbt8qhdhjhzuWbbLO5U+ow="
         ),
         new(
             Id: 456,
@@ -25,7 +26,8 @@ public sealed class InMemoryUsersRepository : IUsersRepository
             Avatar: "https://cdn.example.com/avatars/456.jpg",
             Bio: "Their bio",
             Settings: new UserSettings(Notifications: true, Theme: "light"),
-            LastSeen: null
+            LastSeen: null,
+            PasswordHash: "PBKDF2$SHA256$100000$bGVnYWN5LXVzZXJzLXNhbHQ=$FflXmUN1iBnxwbQCPl9NCFbt8qhdhjhzuWbbLO5U+ow="
         )
     ];
 

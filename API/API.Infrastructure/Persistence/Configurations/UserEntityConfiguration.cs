@@ -47,6 +47,10 @@ public sealed class UserEntityConfiguration : IEntityTypeConfiguration<UserEntit
         builder.Property(x => x.LastSeenAt)
             .HasColumnName("last_seen_at");
 
+        builder.Property(x => x.PasswordHash)
+            .HasColumnName("password_hash")
+            .IsRequired();
+
         builder.Property(x => x.Settings)
             .HasColumnName("settings")
             .HasColumnType("jsonb")

@@ -1,22 +1,32 @@
 using API.Application.Users;
+using API.Application.Common.Exceptions;
 using API.Domain.Users;
 
 namespace API.Application.Auth;
 
-public sealed class AuthService
+public sealed class AuthService : IAuthService
 {
+    public const string LegacyDefaultPassword = "    ";
+
     private readonly IUsersRepository _usersRepository;
     private readonly IUserTokenService _userTokenService;
+    private readonly IPasswordHashService _passwordHashService;
 
-    public AuthService(IUsersRepository usersRepository, IUserTokenService userTokenService)
+    public AuthService(
+        IUsersRepository usersRepository,
+        IUserTokenService userTokenService,
+        IPasswordHashService passwordHashService)
     {
         _usersRepository = usersRepository;
         _userTokenService = userTokenService;
+        _passwordHashService = passwordHashService;
     }
 
-    public (User User, string Token) Register(string phone, string displayName, string? username)
+    public (User User, string Token) Register(string phone, string displayName, string? username, string? password)
     {
         var normalizedUsername = string.IsNullOrWhiteSpace(username) ? null : username.Trim();
+        var normalizedPassword = string.IsNullOrWhiteSpace(password) ? LegacyDefaultPassword : password;
+        var passwordHash = _passwordHashService.HashPassword(normalizedPassword);
 
         var userToCreate = new User(
             Id: 0,
@@ -26,7 +36,8 @@ public sealed class AuthService
             Avatar: "https://testingbot.com/free-online-tools/random-avatar/128",
             Bio: null,
             Settings: new UserSettings(Notifications: true, Theme: "dark"),
-            LastSeen: DateTimeOffset.UtcNow
+            LastSeen: DateTimeOffset.UtcNow,
+            PasswordHash: passwordHash
         );
 
         var savedUser = _usersRepository.Add(userToCreate);
@@ -37,6 +48,18 @@ public sealed class AuthService
         if (!string.Equals(user.Username, savedUser.Username, StringComparison.Ordinal))
         {
             _usersRepository.Update(user);
+        }
+
+        var token = _userTokenService.GenerateToken(user);
+        return (user, token);
+    }
+
+    public (User User, string Token) Login(string phone, string password)
+    {
+        var user = _usersRepository.GetByPhone(phone);
+        if (user is null || !_passwordHashService.VerifyPassword(password, user.PasswordHash))
+        {
+            throw new InvalidCredentialsException();
         }
 
         var token = _userTokenService.GenerateToken(user);

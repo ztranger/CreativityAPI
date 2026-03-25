@@ -1,6 +1,15 @@
 namespace API.Contracts.Auth;
 
-public sealed record RegisterRequest(string Phone, string DisplayName, string? Username);
+public sealed record RegisterRequest
+{
+    public string Phone { get; init; } = string.Empty;
+
+    public string DisplayName { get; init; } = string.Empty;
+
+    public string? Username { get; init; }
+
+    public string? Password { get; init; }
+}
 
 public sealed record AuthUserSettingsResponse(bool Notifications, string Theme);
 
@@ -15,6 +24,10 @@ public sealed record AuthUserResponse(
     DateTimeOffset? LastSeen);
 
 public sealed record AuthRegisterResponse(AuthUserResponse User, string Token);
+
+public sealed record LoginRequest(string Phone, string Password);
+
+public sealed record LoginResponse(AuthUserResponse User, string Token);
 
 public sealed record AuthVerifyRequest(string Phone, string Code);
 

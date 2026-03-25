@@ -1,9 +1,11 @@
 using CreativityUI.Features.Auth.Services;
+using API.Contracts.Auth;
 
 namespace CreativityUI.Features.Auth.ViewModels;
 
 public sealed class LoginViewModel : ViewModelBase
 {
+    private readonly IAuthService _authService;
     private readonly IAuthNavigationService _authNavigationService;
     private readonly IAuthTokenStore _authTokenStore;
     private readonly ITokenValidationService _tokenValidationService;
@@ -17,14 +19,16 @@ public sealed class LoginViewModel : ViewModelBase
     private string _rawToken = string.Empty;
 
     public LoginViewModel(
+        IAuthService authService,
         IAuthNavigationService authNavigationService,
         IAuthTokenStore authTokenStore,
         ITokenValidationService tokenValidationService)
     {
+        _authService = authService;
         _authNavigationService = authNavigationService;
         _authTokenStore = authTokenStore;
         _tokenValidationService = tokenValidationService;
-        LoginCommand = new Command(OnLogin);
+        LoginCommand = new Command(async () => await OnLoginAsync());
         OpenRegisterCommand = new Command(async () => await OpenRegisterAsync());
         CopyTokenCommand = new Command(async () => await CopyTokenAsync());
         ClearTokenCommand = new Command(async () => await ClearTokenAsync());
@@ -79,7 +83,7 @@ public sealed class LoginViewModel : ViewModelBase
     public Command LoginCommand { get; }
     public Command OpenRegisterCommand { get; }
 
-    private void OnLogin()
+    private async Task OnLoginAsync()
     {
         if (string.IsNullOrWhiteSpace(Phone) || string.IsNullOrWhiteSpace(Password))
         {
@@ -87,7 +91,17 @@ public sealed class LoginViewModel : ViewModelBase
             return;
         }
 
-        StatusMessage = "Login не реализован на этом этапе.";
+        try
+        {
+            var request = new LoginRequest(Phone.Trim(), Password);
+            var response = await _authService.LoginAsync(request);
+            UpdateTokenPresentation(response.Token);
+            StatusMessage = $"Logged in: id={response.User.Id}, name={response.User.DisplayName}.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Login failed: {ex.Message}";
+        }
     }
 
     private async Task OpenRegisterAsync()
