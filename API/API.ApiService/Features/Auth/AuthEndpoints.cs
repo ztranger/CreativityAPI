@@ -1,4 +1,5 @@
 using AppAuthService = API.Application.Auth.AuthService;
+using API.Contracts.Auth;
 
 namespace API.ApiService.Features.Auth;
 
@@ -11,14 +12,15 @@ public static class AuthEndpoints
         auth.MapPost("/register", (RegisterRequest request, AppAuthService authService) =>
         {
             var (user, token) = authService.Register(request.Phone, request.DisplayName, request.Username);
-            var response = new AuthRegisterResponse(user, token);
+            var response = new AuthRegisterResponse(ToAuthUserResponse(user), token);
             return Results.Created($"/users/{response.User.Id}", response);
         });
 
         auth.MapPost("/verify", (AuthVerifyRequest request, AppAuthService authService) =>
         {
             var (user, token) = authService.Verify(request.Phone);
-            var response = new AuthVerifyResponse(User: user, Token: token, Settings: new { });
+            var settings = new AuthUserSettingsResponse(user.Settings.Notifications, user.Settings.Theme);
+            var response = new AuthVerifyResponse(User: ToAuthUserResponse(user), Token: token, Settings: settings);
             return Results.Ok(response);
         });
 
@@ -30,5 +32,20 @@ public static class AuthEndpoints
         });
 
         return app;
+    }
+
+    private static AuthUserResponse ToAuthUserResponse(API.Domain.Users.User user)
+    {
+        var settings = new AuthUserSettingsResponse(user.Settings.Notifications, user.Settings.Theme);
+        return new AuthUserResponse(
+            Id: user.Id,
+            Phone: user.Phone,
+            Username: user.Username,
+            DisplayName: user.DisplayName,
+            Avatar: user.Avatar,
+            Bio: user.Bio,
+            Settings: settings,
+            LastSeen: user.LastSeen
+        );
     }
 }

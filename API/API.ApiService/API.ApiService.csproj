@@ -10,6 +10,7 @@
     <ProjectReference Include="..\API.ServiceDefaults\API.ServiceDefaults.csproj" />
     <ProjectReference Include="..\API.Application\API.Application.csproj" />
     <ProjectReference Include="..\API.Infrastructure\API.Infrastructure.csproj" />
+    <ProjectReference Include="..\API.Contracts\API.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

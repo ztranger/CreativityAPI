@@ -15,3 +15,7 @@ API/API.Application/bin
 API/API.Domain/obj
 API/API.Application/obj
 .vs
+API/API.Contracts/bin
+CreativityUI/bin
+API/API.Contracts/obj
+CreativityUI/obj

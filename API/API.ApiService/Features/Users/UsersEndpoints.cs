@@ -1,4 +1,5 @@
 using AppUsersService = API.Application.Users.UsersService;
+using API.Contracts.Users;
 
 namespace API.ApiService.Features.Users;
 
@@ -18,11 +19,7 @@ public static class UsersEndpoints
                 DisplayName: user.DisplayName,
                 Avatar: user.Avatar,
                 Bio: user.Bio ?? "Hello there!",
-                Settings: new
-                {
-                    notifications = user.Settings.Notifications,
-                    theme = user.Settings.Theme
-                },
+                Settings: new UserSettingsResponse(user.Settings.Notifications, user.Settings.Theme),
                 LastSeen: user.LastSeen ?? DateTimeOffset.UtcNow
             );
             return Results.Ok(response);
@@ -39,7 +36,7 @@ public static class UsersEndpoints
             var form = await httpRequest.ReadFormAsync();
             _ = form.Files["avatar"];
             var avatarUrl = "https://cdn.example.com/avatars/123.jpg";
-            var response = new { avatar_url = avatarUrl };
+            var response = new AvatarUploadResponse(avatarUrl);
             return Results.Ok(response);
         }).RequireAuthorization();
 
@@ -80,7 +77,7 @@ public static class UsersEndpoints
 
         users.MapPost("/me/logout", () =>
         {
-            var response = new { success = true };
+            var response = new LogoutResponse(true);
             return Results.Ok(response);
         }).RequireAuthorization();
 

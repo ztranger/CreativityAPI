@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.Application.Chats;
+using API.Contracts.Chats;
 using AppChatsService = API.Application.Chats.ChatsService;
 
 namespace API.ApiService.Features.Chats;

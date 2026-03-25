@@ -1,4 +1,4 @@
-namespace API.ApiService.Features.Chats;
+namespace API.Contracts.Chats;
 
 public sealed record CreateChatRequest(
     short ChatType,
