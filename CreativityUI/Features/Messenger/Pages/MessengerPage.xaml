@@ -1,95 +1,340 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:chats="clr-namespace:API.Contracts.Chats;assembly=API.Contracts"
              xmlns:viewModels="clr-namespace:CreativityUI.Features.Messenger.ViewModels"
              x:Class="CreativityUI.Features.Messenger.Pages.MessengerPage"
              x:DataType="viewModels:MessengerViewModel"
              Title="Messenger">
 
-    <Grid Padding="16"
-          ColumnDefinitions="320,*"
-          RowDefinitions="Auto,*">
-        <Button Grid.Row="0"
-                Grid.Column="0"
-                Margin="0,0,12,12"
-                Text="Новый чат"
-                Command="{Binding CreateChatCommand}" />
+    <ContentPage.Resources>
+        <Color x:Key="SidebarBg">#F8F8F8</Color>
+        <Color x:Key="SelectedChatBg">#3A8CCE</Color>
+        <Color x:Key="SelectedChatText">#FFFFFF</Color>
+        <Color x:Key="MessageAreaBg">#DDEED9</Color>
+        <Color x:Key="IncomingBubbleBg">#FFFFFF</Color>
+        <Color x:Key="OutgoingBubbleBg">#D9FDD3</Color>
+        <Color x:Key="MutedText">#76808A</Color>
 
-        <Border Grid.Row="1"
-                Grid.Column="0"
-                Margin="0,0,12,0"
-                StrokeThickness="1"
-                Padding="8">
-            <CollectionView ItemsSource="{Binding Chats}"
-                            SelectionMode="Single"
-                            SelectedItem="{Binding SelectedChat, Mode=TwoWay}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="chats:ChatSummaryResponse">
-                        <VerticalStackLayout Padding="8,10" Spacing="4">
-                            <Label Text="{Binding Title}"
-                                   FontAttributes="Bold"
-                                   LineBreakMode="TailTruncation" />
-                            <Label Text="{Binding Description}"
-                                   FontSize="12"
-                                   TextColor="Gray"
-                                   LineBreakMode="TailTruncation" />
-                        </VerticalStackLayout>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </Border>
+        <Style x:Key="AvatarCircleStyle" TargetType="Border">
+            <Setter Property="WidthRequest" Value="42" />
+            <Setter Property="HeightRequest" Value="42" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="21" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BackgroundColor" Value="#B8C8D6" />
+            <Setter Property="StrokeThickness" Value="0" />
+        </Style>
 
-        <Border Grid.Row="0"
-                Grid.RowSpan="2"
-                Grid.Column="1"
-                StrokeThickness="1"
-                Padding="12">
-            <Grid RowDefinitions="Auto,Auto,*,Auto">
-                <Label Grid.Row="0"
-                       Text="{Binding SelectedChatTitle}"
-                       FontSize="22"
-                       FontAttributes="Bold" />
+        <DataTemplate x:Key="ChatItemTemplate" x:DataType="viewModels:ChatListItemViewModel">
+            <Border StrokeThickness="0"
+                    Padding="10,8"
+                    Margin="6,2"
+                    BackgroundColor="Transparent">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10" />
+                </Border.StrokeShape>
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource SelectedChatBg}" />
+                    </DataTrigger>
+                </Border.Triggers>
+
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Border Style="{StaticResource AvatarCircleStyle}">
+                        <Label HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               Text="{Binding AvatarInitials}"
+                               FontAttributes="Bold"
+                               TextColor="White" />
+                    </Border>
+
+                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                        <Label Text="{Binding Title}"
+                               FontAttributes="Bold"
+                               LineBreakMode="TailTruncation">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource SelectedChatText}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding Subtitle}"
+                               FontSize="12"
+                               LineBreakMode="TailTruncation"
+                               TextColor="{StaticResource MutedText}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="#D6EBFF" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Grid.Column="2"
+                                         HorizontalOptions="End"
+                                         Spacing="4">
+                        <Label Text="{Binding TimeText}"
+                               FontSize="11"
+                               HorizontalTextAlignment="End"
+                               TextColor="{StaticResource MutedText}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="#D6EBFF" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Border IsVisible="{Binding HasUnread}"
+                                HorizontalOptions="End"
+                                StrokeThickness="0"
+                                BackgroundColor="#68BA52"
+                                Padding="6,1">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12" />
+                            </Border.StrokeShape>
+                            <Label Text="{Binding UnreadCount}"
+                                   FontSize="11"
+                                   TextColor="White" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="MessageItemTemplate" x:DataType="viewModels:MessageItemViewModel">
+            <Grid Margin="8,3" ColumnDefinitions="*,*">
+                <Border Grid.Column="0"
+                        IsVisible="{Binding IsIncoming}"
+                        HorizontalOptions="Start"
+                        MaximumWidthRequest="430"
+                        BackgroundColor="{StaticResource IncomingBubbleBg}"
+                        StrokeThickness="0"
+                        Padding="10,7">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="3">
+                        <Label Text="{Binding SenderCaption}"
+                               FontAttributes="Bold"
+                               FontSize="12"
+                               TextColor="#4D6F8D" />
+                        <Label Text="{Binding Message.Text}" LineBreakMode="WordWrap" />
+                        <Label Text="{Binding TimeText}"
+                               FontSize="11"
+                               HorizontalTextAlignment="End"
+                               TextColor="{StaticResource MutedText}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="1"
+                        IsVisible="{Binding IsOutgoing}"
+                        HorizontalOptions="End"
+                        MaximumWidthRequest="430"
+                        BackgroundColor="{StaticResource OutgoingBubbleBg}"
+                        StrokeThickness="0"
+                        Padding="10,7">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="3">
+                        <Label Text="{Binding Message.Text}" LineBreakMode="WordWrap" />
+                        <Label Text="{Binding TimeText}"
+                               FontSize="11"
+                               HorizontalTextAlignment="End"
+                               TextColor="{StaticResource MutedText}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </ContentPage.Resources>
+
+    <Grid BackgroundColor="#D3D8DD">
+        <Grid IsVisible="{OnIdiom Phone=False, Default=True}"
+              Padding="0"
+              ColumnDefinitions="335,*">
+            <Grid Grid.Column="0"
+                  BackgroundColor="{StaticResource SidebarBg}"
+                  RowDefinitions="Auto,Auto,*">
+                <Grid Grid.Row="0"
+                      Padding="10,8"
+                      ColumnDefinitions="Auto,*"
+                      ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Text="+"
+                            WidthRequest="40"
+                            HeightRequest="40"
+                            CornerRadius="20"
+                            FontSize="24"
+                            BackgroundColor="#4FA5E2"
+                            TextColor="White"
+                            Command="{Binding CreateChatCommand}" />
+                    <Border Grid.Column="1"
+                            StrokeThickness="0"
+                            BackgroundColor="#ECECEC"
+                            Padding="12,8">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="20" />
+                        </Border.StrokeShape>
+                        <Entry Placeholder="Search"
+                               Text="{Binding SearchQuery}"
+                               BackgroundColor="Transparent"
+                               ClearButtonVisibility="WhileEditing" />
+                    </Border>
+                </Grid>
 
                 <Label Grid.Row="1"
-                       Margin="0,6,0,10"
+                       Margin="14,4,14,4"
                        Text="{Binding StatusMessage}"
-                       FontSize="12"
-                       TextColor="Gray" />
+                       FontSize="11"
+                       TextColor="{StaticResource MutedText}" />
 
                 <CollectionView Grid.Row="2"
-                                ItemsSource="{Binding Messages}"
-                                SelectionMode="None">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="chats:MessageResponse">
-                            <VerticalStackLayout Padding="6,8" Spacing="4">
-                                <Label Text="{Binding SenderUserId, StringFormat='User #{0}'}"
-                                       FontAttributes="Bold"
-                                       FontSize="12" />
-                                <Label Text="{Binding Text}"
-                                       LineBreakMode="WordWrap" />
-                                <Label Text="{Binding CreatedAt, StringFormat='{0:g}'}"
-                                       FontSize="11"
-                                       TextColor="Gray" />
-                            </VerticalStackLayout>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                                ItemsSource="{Binding ChatItems}"
+                                SelectedItem="{Binding SelectedChatItem, Mode=TwoWay}"
+                                ItemTemplate="{StaticResource ChatItemTemplate}"
+                                SelectionMode="Single" />
+            </Grid>
 
-                <Grid Grid.Row="3"
-                      Margin="0,10,0,0"
+            <Grid Grid.Column="1"
+                  RowDefinitions="Auto,*,Auto"
+                  BackgroundColor="{StaticResource MessageAreaBg}">
+                <Grid Grid.Row="0"
+                      BackgroundColor="#F2F3F5"
+                      Padding="14,10"
+                      ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+                      ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Text="&#x276E;"
+                            FontSize="18"
+                            BackgroundColor="Transparent" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                        <Label Text="{Binding SelectedChatTitle}"
+                               FontAttributes="Bold"
+                               FontSize="17" />
+                        <Label Text="{Binding SelectedChatSubtitle}"
+                               FontSize="12"
+                               TextColor="{StaticResource MutedText}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="2" Text="&#x1F50D;" BackgroundColor="Transparent" />
+                    <Button Grid.Column="3" Text="&#x260E;" BackgroundColor="Transparent" />
+                    <Button Grid.Column="4" Text="&#x22EE;" BackgroundColor="Transparent" />
+                </Grid>
+
+                <CollectionView Grid.Row="1"
+                                Margin="4,6"
+                                ItemsSource="{Binding MessageItems}"
+                                ItemTemplate="{StaticResource MessageItemTemplate}"
+                                SelectionMode="None" />
+
+                <Grid Grid.Row="2"
+                      BackgroundColor="#F2F3F5"
+                      Padding="10,8"
+                      ColumnDefinitions="Auto,*,Auto"
+                      ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Text="&#x1F4CE;"
+                            BackgroundColor="Transparent"
+                            FontSize="20" />
+                    <Border Grid.Column="1"
+                            StrokeThickness="0"
+                            BackgroundColor="White"
+                            Padding="12,8">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="20" />
+                        </Border.StrokeShape>
+                        <Entry Placeholder="Write a message..."
+                               Text="{Binding DraftMessage}"
+                               ReturnType="Send"
+                               ReturnCommand="{Binding SendMessageCommand}"
+                               BackgroundColor="Transparent" />
+                    </Border>
+                    <Button Grid.Column="2"
+                            Text="Send"
+                            Command="{Binding SendMessageCommand}"
+                            BackgroundColor="#4FA5E2"
+                            TextColor="White"
+                            Padding="14,8" />
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <Grid IsVisible="{OnIdiom Phone=True, Default=False}"
+              Padding="0"
+              RowDefinitions="Auto,*,*"
+              BackgroundColor="{StaticResource MessageAreaBg}">
+            <Grid Grid.Row="0"
+                  BackgroundColor="{StaticResource SidebarBg}"
+                  Padding="10,8"
+                  ColumnDefinitions="Auto,*,Auto"
+                  ColumnSpacing="8">
+                <Button Grid.Column="0"
+                        Text="+"
+                        WidthRequest="36"
+                        HeightRequest="36"
+                        CornerRadius="18"
+                        Command="{Binding CreateChatCommand}"
+                        BackgroundColor="#4FA5E2"
+                        TextColor="White" />
+                <Border Grid.Column="1"
+                        StrokeThickness="0"
+                        BackgroundColor="#ECECEC"
+                        Padding="10,6">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="18" />
+                    </Border.StrokeShape>
+                    <Entry Placeholder="Search"
+                           Text="{Binding SearchQuery}"
+                           BackgroundColor="Transparent" />
+                </Border>
+                <Label Grid.Column="2"
+                       VerticalTextAlignment="Center"
+                       FontSize="20"
+                       Text="&#x2630;" />
+            </Grid>
+
+            <CollectionView Grid.Row="1"
+                            BackgroundColor="{StaticResource SidebarBg}"
+                            ItemsSource="{Binding ChatItems}"
+                            SelectedItem="{Binding SelectedChatItem, Mode=TwoWay}"
+                            ItemTemplate="{StaticResource ChatItemTemplate}"
+                            SelectionMode="Single" />
+
+            <Grid Grid.Row="2"
+                  RowDefinitions="Auto,*,Auto">
+                <Grid Grid.Row="0"
+                      BackgroundColor="#F2F3F5"
+                      Padding="12,8">
+                    <VerticalStackLayout Spacing="1">
+                        <Label Text="{Binding SelectedChatTitle}"
+                               FontAttributes="Bold"
+                               FontSize="16" />
+                        <Label Text="{Binding SelectedChatSubtitle}"
+                               FontSize="11"
+                               TextColor="{StaticResource MutedText}" />
+                    </VerticalStackLayout>
+                </Grid>
+
+                <CollectionView Grid.Row="1"
+                                ItemsSource="{Binding MessageItems}"
+                                ItemTemplate="{StaticResource MessageItemTemplate}"
+                                SelectionMode="None" />
+
+                <Grid Grid.Row="2"
+                      BackgroundColor="#F2F3F5"
+                      Padding="8,6"
                       ColumnDefinitions="*,Auto"
                       ColumnSpacing="8">
                     <Entry Grid.Column="0"
-                           Placeholder="Введите сообщение"
+                           Placeholder="Write a message..."
                            Text="{Binding DraftMessage}"
                            ReturnType="Send"
                            ReturnCommand="{Binding SendMessageCommand}" />
                     <Button Grid.Column="1"
-                            Text="Отправить"
+                            Text="Send"
                             Command="{Binding SendMessageCommand}" />
                 </Grid>
             </Grid>
-        </Border>
+        </Grid>
     </Grid>
 </ContentPage>

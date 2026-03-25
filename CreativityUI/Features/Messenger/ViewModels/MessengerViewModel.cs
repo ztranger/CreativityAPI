@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Text;
+using System.Text.Json;
 using API.Contracts.Chats;
+using CreativityUI.Features.Auth.Services;
 using CreativityUI.Features.Auth.ViewModels;
 using CreativityUI.Features.Messenger.Services;
 using CreativityUI.Services.Api;
@@ -12,39 +15,52 @@ public sealed class MessengerViewModel : ViewModelBase
 
     private readonly CreativityApiClient _apiClient;
     private readonly ILastChatStore _lastChatStore;
+    private readonly IAuthTokenStore _authTokenStore;
+    private readonly List<ChatSummaryResponse> _allChats = [];
+    private readonly List<MessageResponse> _allMessages = [];
+    private ChatListItemViewModel? _selectedChatItem;
     private ChatSummaryResponse? _selectedChat;
     private bool _isBusy;
     private bool _isSendingMessage;
     private string _statusMessage = "Загрузка чатов...";
     private string _draftMessage = string.Empty;
+    private string _searchQuery = string.Empty;
+    private int? _currentUserId;
 
-    public MessengerViewModel(CreativityApiClient apiClient, ILastChatStore lastChatStore)
+    public MessengerViewModel(
+        CreativityApiClient apiClient,
+        ILastChatStore lastChatStore,
+        IAuthTokenStore authTokenStore)
     {
         _apiClient = apiClient;
         _lastChatStore = lastChatStore;
-        Chats = [];
-        Messages = [];
+        _authTokenStore = authTokenStore;
+        ChatItems = [];
+        MessageItems = [];
         CreateChatCommand = new Command(async () => await CreateChatAsync(), () => !IsBusy && !IsSendingMessage);
         SendMessageCommand = new Command(async () => await SendMessageAsync(), CanSendMessage);
     }
 
-    public ObservableCollection<ChatSummaryResponse> Chats { get; }
+    public ObservableCollection<ChatListItemViewModel> ChatItems { get; }
 
-    public ObservableCollection<MessageResponse> Messages { get; }
+    public ObservableCollection<MessageItemViewModel> MessageItems { get; }
 
     public Command CreateChatCommand { get; }
     public Command SendMessageCommand { get; }
 
-    public ChatSummaryResponse? SelectedChat
+    public ChatListItemViewModel? SelectedChatItem
     {
-        get => _selectedChat;
+        get => _selectedChatItem;
         set
         {
-            if (SetProperty(ref _selectedChat, value))
+            if (SetProperty(ref _selectedChatItem, value))
             {
+                SetSelectedChatVisualState();
+                _selectedChat = value?.Chat;
                 OnPropertyChanged(nameof(SelectedChatTitle));
+                OnPropertyChanged(nameof(SelectedChatSubtitle));
                 UpdateCommandState();
-                _ = SelectChatAsync(value);
+                _ = SelectChatAsync(value?.Chat);
             }
         }
     }
@@ -62,9 +78,26 @@ public sealed class MessengerViewModel : ViewModelBase
     }
 
     public string SelectedChatTitle =>
-        SelectedChat is null
+        _selectedChat is null
             ? "Выберите чат"
-            : string.IsNullOrWhiteSpace(SelectedChat.Title) ? $"Chat #{SelectedChat.Id}" : SelectedChat.Title;
+            : string.IsNullOrWhiteSpace(_selectedChat.Title) ? $"Chat #{_selectedChat.Id}" : _selectedChat.Title;
+
+    public string SelectedChatSubtitle =>
+        _selectedChat is null
+            ? "Откройте чат из списка слева"
+            : "last seen recently";
+
+    public string SearchQuery
+    {
+        get => _searchQuery;
+        set
+        {
+            if (SetProperty(ref _searchQuery, value))
+            {
+                ApplyChatFilter();
+            }
+        }
+    }
 
     public string StatusMessage
     {
@@ -98,6 +131,7 @@ public sealed class MessengerViewModel : ViewModelBase
 
     public async Task InitializeAsync()
     {
+        await EnsureCurrentUserIdAsync();
         await LoadChatsAsync();
     }
 
@@ -114,23 +148,22 @@ public sealed class MessengerViewModel : ViewModelBase
             StatusMessage = "Загрузка чатов...";
 
             var response = await _apiClient.GetChatsAsync();
-            Chats.Clear();
-            foreach (var chat in response?.Chats ?? [])
-            {
-                Chats.Add(chat);
-            }
+            _allChats.Clear();
+            _allChats.AddRange((response?.Chats ?? []).OrderByDescending(x => x.UpdatedAt));
+            ApplyChatFilter();
 
-            if (Chats.Count == 0)
+            if (ChatItems.Count == 0)
             {
-                Messages.Clear();
-                SelectedChat = null;
+                MessageItems.Clear();
+                _allMessages.Clear();
+                SelectedChatItem = null;
                 await _lastChatStore.ClearLastSelectedChatIdAsync();
                 StatusMessage = "Чатов пока нет. Создайте новый чат.";
                 return;
             }
 
             await RestoreSelectedChatAsync();
-            StatusMessage = $"Чатов: {Chats.Count}";
+            StatusMessage = $"Чатов: {ChatItems.Count}";
         }
         catch (Exception ex)
         {
@@ -147,18 +180,20 @@ public sealed class MessengerViewModel : ViewModelBase
         var savedChatId = await _lastChatStore.GetLastSelectedChatIdAsync();
         if (savedChatId is null)
         {
-            SelectedChat = Chats[0];
+            SelectedChatItem = ChatItems[0];
             return;
         }
 
-        SelectedChat = Chats.FirstOrDefault(x => x.Id == savedChatId.Value) ?? Chats[0];
+        var targetChat = _allChats.FirstOrDefault(x => x.Id == savedChatId.Value) ?? _allChats[0];
+        SelectedChatItem = ChatItems.FirstOrDefault(x => x.Chat.Id == targetChat.Id) ?? ChatItems[0];
     }
 
     private async Task SelectChatAsync(ChatSummaryResponse? chat)
     {
         if (chat is null)
         {
-            Messages.Clear();
+            MessageItems.Clear();
+            _allMessages.Clear();
             UpdateCommandState();
             return;
         }
@@ -167,15 +202,13 @@ public sealed class MessengerViewModel : ViewModelBase
         {
             await _lastChatStore.SaveLastSelectedChatIdAsync(chat.Id);
             var response = await _apiClient.GetChatMessagesAsync(chat.Id);
-            Messages.Clear();
-            foreach (var message in response?.Messages ?? [])
-            {
-                Messages.Add(message);
-            }
+            _allMessages.Clear();
+            _allMessages.AddRange((response?.Messages ?? []).OrderBy(x => x.CreatedAt));
+            RebuildMessageItems();
 
-            StatusMessage = Messages.Count == 0
+            StatusMessage = MessageItems.Count == 0
                 ? "В этом чате пока нет сообщений."
-                : $"Сообщений: {Messages.Count}";
+                : $"Сообщений: {MessageItems.Count}";
         }
         catch (Exception ex)
         {
@@ -223,7 +256,7 @@ public sealed class MessengerViewModel : ViewModelBase
 
             if (createdChat?.Chat is not null)
             {
-                SelectedChat = Chats.FirstOrDefault(x => x.Id == createdChat.Chat.Id) ?? SelectedChat;
+                SelectedChatItem = ChatItems.FirstOrDefault(x => x.Chat.Id == createdChat.Chat.Id) ?? SelectedChatItem;
             }
 
             StatusMessage = "Чат успешно создан.";
@@ -242,13 +275,13 @@ public sealed class MessengerViewModel : ViewModelBase
     {
         return !IsBusy
             && !IsSendingMessage
-            && SelectedChat is not null
+            && _selectedChat is not null
             && !string.IsNullOrWhiteSpace(DraftMessage);
     }
 
     private async Task SendMessageAsync()
     {
-        if (SelectedChat is null)
+        if (_selectedChat is null)
         {
             StatusMessage = "Сначала выберите чат.";
             return;
@@ -265,15 +298,17 @@ public sealed class MessengerViewModel : ViewModelBase
         {
             IsSendingMessage = true;
             var request = new SendMessageRequest(Text: text);
-            var sentMessage = await _apiClient.SendMessageAsync(SelectedChat.Id, request);
+            var sentMessage = await _apiClient.SendMessageAsync(_selectedChat.Id, request);
 
             if (sentMessage is not null)
             {
-                Messages.Add(sentMessage);
+                _allMessages.Add(sentMessage);
+                _currentUserId ??= sentMessage.SenderUserId;
+                MessageItems.Add(MapMessageItem(sentMessage));
             }
             else
             {
-                await SelectChatAsync(SelectedChat);
+                await SelectChatAsync(_selectedChat);
             }
 
             DraftMessage = string.Empty;
@@ -294,4 +329,192 @@ public sealed class MessengerViewModel : ViewModelBase
         CreateChatCommand.ChangeCanExecute();
         SendMessageCommand.ChangeCanExecute();
     }
+
+    private void ApplyChatFilter()
+    {
+        var query = SearchQuery?.Trim();
+        var filtered = string.IsNullOrWhiteSpace(query)
+            ? _allChats
+            : _allChats.Where(x =>
+                    (!string.IsNullOrWhiteSpace(x.Title) && x.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    || (!string.IsNullOrWhiteSpace(x.Description) && x.Description.Contains(query, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+        ChatItems.Clear();
+        foreach (var chat in filtered)
+        {
+            ChatItems.Add(MapChatItem(chat));
+        }
+
+        if (ChatItems.Count == 0)
+        {
+            return;
+        }
+
+        if (_selectedChat is not null)
+        {
+            _selectedChatItem = ChatItems.FirstOrDefault(x => x.Chat.Id == _selectedChat.Id);
+            SetSelectedChatVisualState();
+            OnPropertyChanged(nameof(SelectedChatItem));
+        }
+    }
+
+    private ChatListItemViewModel MapChatItem(ChatSummaryResponse chat)
+    {
+        var title = string.IsNullOrWhiteSpace(chat.Title) ? $"Chat #{chat.Id}" : chat.Title;
+        var subtitle = string.IsNullOrWhiteSpace(chat.Description) ? "Tap to open conversation" : chat.Description;
+        var timeText = chat.UpdatedAt.LocalDateTime.ToString("HH:mm");
+        var initials = BuildInitials(title);
+        var unreadCount = chat.LastMessageId.HasValue && (_selectedChat is null || _selectedChat.Id != chat.Id) ? 1 : 0;
+
+        return new ChatListItemViewModel(chat, title, subtitle, timeText, initials, unreadCount)
+        {
+            IsSelected = _selectedChat?.Id == chat.Id
+        };
+    }
+
+    private void RebuildMessageItems()
+    {
+        MessageItems.Clear();
+        foreach (var message in _allMessages)
+        {
+            MessageItems.Add(MapMessageItem(message));
+        }
+    }
+
+    private MessageItemViewModel MapMessageItem(MessageResponse message)
+    {
+        var isOutgoing = _currentUserId.HasValue && message.SenderUserId == _currentUserId.Value;
+        return new MessageItemViewModel(
+            message,
+            isOutgoing,
+            !isOutgoing,
+            isOutgoing ? "You" : $"User #{message.SenderUserId}",
+            message.CreatedAt.LocalDateTime.ToString("HH:mm"));
+    }
+
+    private static string BuildInitials(string title)
+    {
+        var words = title.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (words.Length == 0)
+        {
+            return "C";
+        }
+
+        if (words.Length == 1)
+        {
+            return words[0].Length >= 2
+                ? words[0][..2].ToUpperInvariant()
+                : words[0].ToUpperInvariant();
+        }
+
+        var initials = new StringBuilder(2);
+        initials.Append(char.ToUpperInvariant(words[0][0]));
+        initials.Append(char.ToUpperInvariant(words[1][0]));
+        return initials.ToString();
+    }
+
+    private void SetSelectedChatVisualState()
+    {
+        foreach (var item in ChatItems)
+        {
+            item.IsSelected = _selectedChatItem is not null && item.Chat.Id == _selectedChatItem.Chat.Id;
+        }
+    }
+
+    private async Task EnsureCurrentUserIdAsync()
+    {
+        if (_currentUserId.HasValue)
+        {
+            return;
+        }
+
+        var token = await _authTokenStore.GetTokenAsync();
+        _currentUserId = TryExtractUserId(token);
+    }
+
+    private static int? TryExtractUserId(string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return null;
+        }
+
+        var parts = token.Split('.');
+        if (parts.Length < 2)
+        {
+            return null;
+        }
+
+        try
+        {
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            var padding = 4 - (payload.Length % 4);
+            if (padding is > 0 and < 4)
+            {
+                payload = payload.PadRight(payload.Length + padding, '=');
+            }
+
+            var payloadBytes = Convert.FromBase64String(payload);
+            using var json = JsonDocument.Parse(payloadBytes);
+
+            if (!json.RootElement.TryGetProperty("sub", out var subClaim))
+            {
+                return null;
+            }
+
+            return subClaim.ValueKind switch
+            {
+                JsonValueKind.Number when subClaim.TryGetInt32(out var numberValue) => numberValue,
+                JsonValueKind.String when int.TryParse(subClaim.GetString(), out var stringValue) => stringValue,
+                _ => null
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }
+
+public sealed class ChatListItemViewModel : ViewModelBase
+{
+    private bool _isSelected;
+
+    public ChatListItemViewModel(
+        ChatSummaryResponse chat,
+        string title,
+        string subtitle,
+        string timeText,
+        string avatarInitials,
+        int unreadCount)
+    {
+        Chat = chat;
+        Title = title;
+        Subtitle = subtitle;
+        TimeText = timeText;
+        AvatarInitials = avatarInitials;
+        UnreadCount = unreadCount;
+    }
+
+    public ChatSummaryResponse Chat { get; }
+    public string Title { get; }
+    public string Subtitle { get; }
+    public string TimeText { get; }
+    public string AvatarInitials { get; }
+    public int UnreadCount { get; }
+    public bool HasUnread => UnreadCount > 0;
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetProperty(ref _isSelected, value);
+    }
+}
+
+public sealed record MessageItemViewModel(
+    MessageResponse Message,
+    bool IsOutgoing,
+    bool IsIncoming,
+    string SenderCaption,
+    string TimeText);
