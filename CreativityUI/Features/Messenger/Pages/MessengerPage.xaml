@@ -103,11 +103,11 @@
         </DataTemplate>
 
         <DataTemplate x:Key="MessageItemTemplate" x:DataType="viewModels:MessageItemViewModel">
-            <Grid Margin="8,3" ColumnDefinitions="*,*">
-                <Border Grid.Column="0"
+            <Grid Margin="8,3">
+                <Border
                         IsVisible="{Binding IsIncoming}"
                         HorizontalOptions="Start"
-                        MaximumWidthRequest="430"
+                        MaximumWidthRequest="{OnIdiom Phone=320, Tablet=560, Desktop=900}"
                         BackgroundColor="{StaticResource IncomingBubbleBg}"
                         StrokeThickness="0"
                         Padding="10,7">
@@ -127,10 +127,10 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border Grid.Column="1"
+                <Border
                         IsVisible="{Binding IsOutgoing}"
                         HorizontalOptions="End"
-                        MaximumWidthRequest="430"
+                        MaximumWidthRequest="{OnIdiom Phone=320, Tablet=560, Desktop=900}"
                         BackgroundColor="{StaticResource OutgoingBubbleBg}"
                         StrokeThickness="0"
                         Padding="10,7">
@@ -138,7 +138,9 @@
                         <RoundRectangle CornerRadius="12" />
                     </Border.StrokeShape>
                     <VerticalStackLayout Spacing="3">
-                        <Label Text="{Binding Message.Text}" LineBreakMode="WordWrap" />
+                        <Label Text="{Binding Message.Text}"
+                               LineBreakMode="WordWrap"
+                               HorizontalTextAlignment="End" />
                         <Label Text="{Binding TimeText}"
                                FontSize="11"
                                HorizontalTextAlignment="End"
